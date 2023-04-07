@@ -22,16 +22,13 @@ sigmoid = nn.Sigmoid()
 # Setting up the device and dataset
 # device = "cpu"
 dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Dataset/RPMED-Traincombined.csv'
-# dataset = '/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Dataset/RPMED-Traincombined.csv'
-# data = dl.dataloader(dataset, device)
 checkpoint_dir = None
-num_samples = 1
+num_samples = 6
 max_num_epochs = 150
 gpus_per_trial = 0
 
 # Defining the architecture
-#layersizes = [6, 20, 30, 35, 45, 14]
-layersizes = [38,100,10,3]
+layersizes = [35,100,20,3]
 acts = [relu, tanh, tanh, softmax]
 NetObject = Net(layersizes, acts)
 
@@ -41,34 +38,19 @@ NetObject = Net(layersizes, acts)
 #         net = nn.DataParallel(net)
 # net.to(device)
 
-# learning_rate = 0.001
-# learning_rate_final_epoch =0.0001 # must be less than learning_rate
-# trials_at_end = 35
-# trials_offset = 10
-
 # Filenames
-# print(sys.argv)
-# if sys.argv[1] == "n":
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
 print(timestamp, layersizes, acts, max_num_epochs)
-# elif sys.argv[1] == "e":
-#   timestamp = sys.argv[2]
-# mod_filename = "/project/tbrun_769/qdec/models/model_"+timestamp+".pt"
-# acc_filename = "/project/tbrun_769/qdec/models/acc_"+timestamp+".pkl"
-
 mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
 acc_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl"
 
 # Hyperparameters
 kwargs = {'epochs': max_num_epochs,
           'dataset': dataset,
-          # 'learningRate': learning_rate,
-          # 'learningLast': learning_rate_final_epoch,
           'momentum': 0.9,
           'layersizes': layersizes,
           'acts': acts,
-          'precision': 5,
-	  	  # 'trials_offset':trials_offset,
+          'precision': 4,
           'criterion': nn.CrossEntropyLoss(),
           'mod_filename': mod_filename,
           'acc_filename': acc_filename,
@@ -76,25 +58,27 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(1e-4, 1e-3)
+	"lr": tune.loguniform(1.6e-3, 3e-3)
 }
 scheduler = ASHAScheduler(
     metric="loss",
     mode="min",
     max_t=max_num_epochs,
-    grace_period=30,
+    grace_period=20,
     reduction_factor=1.2)
 reporter = CLIReporter(
     # parameter_columns=["l1", "l2", "lr", "batch_size"],
     metric_columns=["loss", "accuracy", "training_iteration"],
     max_report_frequency=60)
+
+# Main training function
 result = tune.run(
     partial(train, **kwargs),
-    resources_per_trial={"cpu": 4, "gpu": gpus_per_trial},
+    resources_per_trial={"cpu": 2, "gpu": gpus_per_trial},
     config=config,
     num_samples=num_samples,
     scheduler=scheduler,
-    progress_reporter=reporter, verbose=False)
+    progress_reporter=reporter, verbose=1)
 
 best_trial = result.get_best_trial("loss", "min", "last")
 print("Best trial config: {}".format(best_trial.config))
@@ -102,7 +86,4 @@ print("Best trial final validation loss: {}".format(
     best_trial.last_result["loss"]))
 print("Best trial final validation accuracy: {}".format(
     best_trial.last_result["accuracy"]))
-
-#train(QuantumDecoderNet, checkpoint_dir, device, *data[:4], **kwargs)
-
 

@@ -24,7 +24,6 @@ class Net(nn.Module):
     self.damage = nn.Linear(in_features=layersizes[-2], out_features=layersizes[-1])
 
   def forward(self, featurerow):
-
     num_layers = len(self.acts)
     layers = [self.features] + self.hidden + [self.damage]
     a_0 = self.acts[0](featurerow)
@@ -52,13 +51,12 @@ def train(config, checkpoint_dir = None, **kwargs):
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
                          weight_decay=10 ** -4, amsgrad=False)
 
-  if checkpoint_dir:
-    model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
-    net.load_state_dict(model_state)
-    optimizer.load_state_dict(optimizer_state)
+  # if checkpoint_dir:
+  #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
+  #   net.load_state_dict(model_state)
+  #   optimizer.load_state_dict(optimizer_state)
 
   for epoch in range(kwargs['epochs']):
-    print(epoch)
     for idx, featurerow in enumerate(train_features):
       featurerow, train_labels[idx] = featurerow.to(device), train_labels[idx].to(device)
       optimizer.zero_grad() # Initializing the gradients to zero
@@ -83,7 +81,7 @@ def train(config, checkpoint_dir = None, **kwargs):
     #   path = os.path.join(checkpoint_dir, "checkpoint")
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
 
-    tune.report(loss=loss_epoch, accuracy=train_acc_epoch)
+    tune.report(loss=round(loss_epoch, kwargs['precision']), accuracy=round(train_acc_epoch, kwargs['precision']))
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:
@@ -91,18 +89,15 @@ def train(config, checkpoint_dir = None, **kwargs):
 
 
 def accuracy(NetObject, ds_features, ds_labels, **kwargs):
-  #  use a one-hot method of calculating accuracy: (0.2,0.2,0.6) vs (0,0,1)
+  #  I find the class with "maximum probability" and then compare that to the given labels using the microf1 metric .
   l = len(ds_features)
   outputs = []
 
   with torch.no_grad():
     for idx in range(l):
-      output = NetObject.forward(ds_features[idx]).cpu().detach().numpy()
+      output = NetObject.forward(ds_features[idx]).cpu().detach().numpy()  # output is a length-3 vector of
+      # probabilities that sum to 1.
       outputs.append(np.argmax(output))
 
   return f1_score(outputs, ds_labels.cpu().detach().numpy(), average='micro')
-
-
-
-
 
