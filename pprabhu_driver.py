@@ -26,7 +26,7 @@ dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 fina
 # data = dl.dataloader(dataset, device)
 checkpoint_dir = None
 num_samples = 1
-max_num_epochs = 50
+max_num_epochs = 150
 gpus_per_trial = 0
 
 # Defining the architecture
@@ -41,17 +41,16 @@ NetObject = Net(layersizes, acts)
 #         net = nn.DataParallel(net)
 # net.to(device)
 
-num_epochs = 10
-learning_rate = 0.001
+# learning_rate = 0.001
 # learning_rate_final_epoch =0.0001 # must be less than learning_rate
-trials_at_end = 35
-trials_offset = 10
+# trials_at_end = 35
+# trials_offset = 10
 
 # Filenames
 # print(sys.argv)
 # if sys.argv[1] == "n":
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
-print(timestamp, layersizes, acts, num_epochs, learning_rate, trials_at_end)
+print(timestamp, layersizes, acts, max_num_epochs)
 # elif sys.argv[1] == "e":
 #   timestamp = sys.argv[2]
 # mod_filename = "/project/tbrun_769/qdec/models/model_"+timestamp+".pt"
@@ -61,7 +60,7 @@ mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567
 acc_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl"
 
 # Hyperparameters
-kwargs = {'epochs': num_epochs,
+kwargs = {'epochs': max_num_epochs,
           'dataset': dataset,
           # 'learningRate': learning_rate,
           # 'learningLast': learning_rate_final_epoch,
@@ -83,19 +82,19 @@ scheduler = ASHAScheduler(
     metric="loss",
     mode="min",
     max_t=max_num_epochs,
-    grace_period=1,
-    reduction_factor=1.5)
+    grace_period=30,
+    reduction_factor=1.2)
 reporter = CLIReporter(
     # parameter_columns=["l1", "l2", "lr", "batch_size"],
     metric_columns=["loss", "accuracy", "training_iteration"],
     max_report_frequency=60)
 result = tune.run(
     partial(train, **kwargs),
-    resources_per_trial={"cpu": 2, "gpu": gpus_per_trial},
+    resources_per_trial={"cpu": 4, "gpu": gpus_per_trial},
     config=config,
     num_samples=num_samples,
     scheduler=scheduler,
-    progress_reporter=reporter)
+    progress_reporter=reporter, verbose=False)
 
 best_trial = result.get_best_trial("loss", "min", "last")
 print("Best trial config: {}".format(best_trial.config))

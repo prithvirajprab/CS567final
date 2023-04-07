@@ -58,6 +58,7 @@ def train(config, checkpoint_dir = None, **kwargs):
     optimizer.load_state_dict(optimizer_state)
 
   for epoch in range(kwargs['epochs']):
+    print(epoch)
     for idx, featurerow in enumerate(train_features):
       featurerow, train_labels[idx] = featurerow.to(device), train_labels[idx].to(device)
       optimizer.zero_grad() # Initializing the gradients to zero
@@ -82,7 +83,7 @@ def train(config, checkpoint_dir = None, **kwargs):
     #   path = os.path.join(checkpoint_dir, "checkpoint")
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
 
-    tune.report(loss=(loss), accuracy=train_acc)
+    tune.report(loss=loss_epoch, accuracy=train_acc_epoch)
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:
