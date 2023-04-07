@@ -1,3 +1,4 @@
-/Dataset
-/Accuracy
-/Models
+/Dataset/
+/Accuracy/
+/Models/
+.idea/
