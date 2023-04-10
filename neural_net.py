@@ -7,6 +7,9 @@ import pickle as pkl
 import os
 from ray import tune
 import dataloader as dl
+from preprocess import CustomDataset
+from torch.utils.data import random_split
+from torch.utils.data import DataLoader
 
 from sklearn.metrics import f1_score
 
@@ -26,7 +29,7 @@ class Net(nn.Module):
   def forward(self, featurerow):
     num_layers = len(self.acts)
     layers = [self.features] + self.hidden + [self.damage]
-    a_0 = self.acts[0](featurerow)
+    a_0 = self.acts[0](featurerow)#Why put into an activation function first?
 
     def arch(input, l):
       z_l = layers[l](input)
@@ -46,10 +49,18 @@ def train(config, checkpoint_dir = None, **kwargs):
   NetObject = Net(kwargs['layersizes'], kwargs['acts'])
   device="cpu"
 
+  dataset = CustomDataset(kwargs["dataset"])
+  train_data, valid_data = random_split(
+        dataset=dataset,
+        lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
+    )
+  train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True)
+  valid_dataloader = DataLoader(valid_data, batch_size=64, shuffle=True)
+
   data = dl.dataloader(kwargs["dataset"], device)
-  train_features, train_labels, valid_features, valid_labels = data[:4]
-  optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
-                         weight_decay=10 ** -4, amsgrad=False)
+  # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
+  #                        weight_decay=10 ** -4, amsgrad=False)
+  optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
@@ -57,20 +68,25 @@ def train(config, checkpoint_dir = None, **kwargs):
   #   optimizer.load_state_dict(optimizer_state)
 
   for epoch in range(kwargs['epochs']):
-    for idx, featurerow in enumerate(train_features):
-      featurerow, train_labels[idx] = featurerow.to(device), train_labels[idx].to(device)
+    loss_epoch = 0
+    batch_count = 0
+    for batch_idx, (X, y) in enumerate(train_dataloader):
+      X = X.to(device)
+      y = y.to(device)
       optimizer.zero_grad() # Initializing the gradients to zero
-      output = NetObject.forward(featurerow)
-      loss = kwargs['criterion'](output, train_labels[idx])
+      output = NetObject(X)
+      loss = kwargs['criterion'](output, y)
+      loss_epoch += loss.item()
+      batch_count += 1
       loss.backward()
       optimizer.step()
 
     # Measure training and validation accuracy for each epoch
-    train_acc_epoch = accuracy(NetObject, train_features, train_labels, **kwargs)
-    valid_acc_epoch = accuracy(NetObject, valid_features, valid_labels, **kwargs)
+    train_acc_epoch = accuracy(NetObject, train_dataloader, **kwargs)
+    valid_acc_epoch = accuracy(NetObject, valid_dataloader, **kwargs)
     train_acc.append(train_acc_epoch)
     valid_acc.append(valid_acc_epoch)
-    loss_epoch = loss.cpu().detach().numpy()
+    loss_epoch /= batch_count
     loss_arr.append(loss_epoch)
     print("Epoch {}: Loss = {}".format(epoch+1, round(float(loss_epoch), kwargs['precision'])), flush=True, end=', ')
     print("Training Acc = {}, Validation Acc = {}".format(round(train_acc_epoch, kwargs['precision']),
@@ -81,23 +97,23 @@ def train(config, checkpoint_dir = None, **kwargs):
     #   path = os.path.join(checkpoint_dir, "checkpoint")
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
 
-    tune.report(loss=round(loss_epoch, kwargs['precision']), accuracy=round(train_acc_epoch, kwargs['precision']))
+    tune.report(loss=round(float(loss_epoch), kwargs['precision']), accuracy=round(train_acc_epoch, kwargs['precision']))
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:
     pkl.dump(results, file)
 
-
-def accuracy(NetObject, ds_features, ds_labels, **kwargs):
+def accuracy(NetObject, data_loader, **kwargs):
   #  I find the class with "maximum probability" and then compare that to the given labels using the microf1 metric .
-  l = len(ds_features)
+  ground_truth = []
   outputs = []
 
   with torch.no_grad():
-    for idx in range(l):
-      output = NetObject.forward(ds_features[idx]).cpu().detach().numpy()  # output is a length-3 vector of
+    for batch_idx, (X, y) in enumerate(data_loader):
+      output = NetObject.forward(X).cpu().detach().numpy()  # output is a length-3 vector of
       # probabilities that sum to 1.
-      outputs.append(np.argmax(output))
+      outputs.extend(np.argmax(output, axis=1))
+      ground_truth.extend(y.cpu().detach().numpy())
 
-  return f1_score(outputs, ds_labels.cpu().detach().numpy(), average='micro')
+  return f1_score(ground_truth, outputs, average='micro')
 
