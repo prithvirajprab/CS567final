@@ -23,13 +23,13 @@ sigmoid = nn.Sigmoid()
 # device = "cpu"
 dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Dataset/RPMED-Traincombined.csv'
 checkpoint_dir = None
-num_samples = 6
+num_samples = 8
 max_num_epochs = 150
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [35,100,20,3]
-acts = [relu, tanh, tanh, softmax]
+layersizes = [14,100,15,3]
+acts = [relu, relu, relu, softmax]
 NetObject = Net(layersizes, acts)
 
 # if torch.cuda.is_available():
@@ -58,7 +58,7 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(1.6e-3, 3e-3)
+	"lr": tune.loguniform(7e-3, 5e-2)
 }
 scheduler = ASHAScheduler(
     metric="loss",

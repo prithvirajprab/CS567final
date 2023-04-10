@@ -81,7 +81,7 @@ def train(config, checkpoint_dir = None, **kwargs):
     #   path = os.path.join(checkpoint_dir, "checkpoint")
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
 
-    tune.report(loss=round(loss_epoch, kwargs['precision']), accuracy=round(train_acc_epoch, kwargs['precision']))
+    tune.report(loss=loss_epoch, accuracy=round(train_acc_epoch, kwargs['precision']))
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:

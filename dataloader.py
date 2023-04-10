@@ -11,8 +11,10 @@ def dataloader(filepath, device):
     reader = csv.reader(f)
     data = list(reader)
 
-  features_studied = list(set(range(38)) - set(range(3)))  #  modify this to change which features we want to use in
+  #  modify this to change which features we want to use in
   #  our neural net. Note that we must also change the layersizes in the driver file.
+  features_studied = list(set(range(38)) - set(range(3)))
+  features_studied = [3,4,5,6,7,8,9,10,11,12,13,25,26,27]
 
   #  splitting the training data set into a smaller training, validation and test set.
   sample_size = len(data)
