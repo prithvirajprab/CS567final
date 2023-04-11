@@ -14,7 +14,7 @@ from ray.tune.schedulers import ASHAScheduler
 
 # Activation functions
 elu = nn.ELU # Exponential linear function
-softmax = nn.Softmax(dim=0) # softmax(x_i) = \exp(x_i) / (\sum_j \exp(x_j))
+softmax = nn.Softmax(dim=1) # softmax(x_i) = \exp(x_i) / (\sum_j \exp(x_j))
 tanh = nn.Tanh()
 relu = nn.ReLU()
 sigmoid = nn.Sigmoid()
@@ -28,8 +28,8 @@ max_num_epochs = 150
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [38,20,3]
-acts = [relu, relu, softmax]
+layersizes = [68,35,35,3]
+acts = [relu, relu, relu, softmax]
 NetObject = Net(layersizes, acts)
 
 # if torch.cuda.is_available():
@@ -58,7 +58,7 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(1.6e-4, 3e-4)
+	"lr": tune.loguniform(0.8e-3, 3e-3)
 }
 scheduler = ASHAScheduler(
     metric="loss",
