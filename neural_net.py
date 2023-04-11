@@ -29,7 +29,7 @@ class Net(nn.Module):
   def forward(self, featurerow):
     num_layers = len(self.acts)
     layers = [self.features] + self.hidden + [self.damage]
-    a_0 = self.acts[0](featurerow)#Why put into an activation function first?
+    # a_0 = self.acts[0](featurerow)#Why put into an activation function first?
 
     def arch(input, l):
       z_l = layers[l](input)
@@ -39,7 +39,7 @@ class Net(nn.Module):
       else:
         return a_l
 
-    return arch(a_0, 0)
+    return arch(featurerow, 0)
 
 
 def train(config, checkpoint_dir = None, **kwargs):
@@ -76,6 +76,8 @@ def train(config, checkpoint_dir = None, **kwargs):
       optimizer.zero_grad() # Initializing the gradients to zero
       output = NetObject(X)
       loss = kwargs['criterion'](output, y)
+      # if batch_idx % 1e4 == 0:
+      #   print(loss, output[-1], y[-1])
       loss_epoch += loss.item()
       batch_count += 1
       loss.backward()

@@ -14,7 +14,7 @@ from ray.tune.schedulers import ASHAScheduler
 
 # Activation functions
 elu = nn.ELU # Exponential linear function
-softmax = nn.Softmax(dim=0) # softmax(x_i) = \exp(x_i) / (\sum_j \exp(x_j))
+softmax = nn.Softmax(dim=1) # softmax(x_i) = \exp(x_i) / (\sum_j \exp(x_j))
 tanh = nn.Tanh()
 relu = nn.ReLU()
 sigmoid = nn.Sigmoid()
