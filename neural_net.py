@@ -54,8 +54,8 @@ def train(config, checkpoint_dir = None, **kwargs):
         dataset=dataset,
         lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
     )
-  train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True)
-  valid_dataloader = DataLoader(valid_data, batch_size=64, shuffle=True)
+  train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
+  valid_dataloader = DataLoader(valid_data, batch_size=config['batch_size'], shuffle=True)
 
   data = dl.dataloader(kwargs["dataset"], device)
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,

@@ -21,14 +21,14 @@ sigmoid = nn.Sigmoid()
 
 # Setting up the device and dataset
 # device = "cpu"
-dataset = 'C:/Users/hhjimhhj/Desktop/usc/567/project/CS567final/Dataset/RPMED-Traincombined.csv'
+dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Dataset/RPMED-Traincombined.csv'
 checkpoint_dir = None
-num_samples = 6
+num_samples = 8
 max_num_epochs = 150
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [38,20,3]
+layersizes = [4,15,3]
 acts = [relu, relu, softmax]
 NetObject = Net(layersizes, acts)
 
@@ -41,8 +41,8 @@ NetObject = Net(layersizes, acts)
 # Filenames
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
 print(timestamp, layersizes, acts, max_num_epochs)
-mod_filename = "C:/Users/hhjimhhj/Desktop/usc/567/project/CS567final/Models/model_"+timestamp+".pt"
-acc_filename = "C:/Users/hhjimhhj/Desktop/usc/567/project/CS567final/Accuracy/acc_"+timestamp+".pkl"
+mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
+acc_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl"
 
 # Hyperparameters
 kwargs = {'epochs': max_num_epochs,
@@ -58,13 +58,14 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(1.6e-4, 3e-4)
+	"lr": tune.loguniform(1e-5, 5e-5),
+    'batch_size': tune.qrandint(lower=2, upper=5, q=1)
 }
 scheduler = ASHAScheduler(
     metric="loss",
     mode="min",
     max_t=max_num_epochs,
-    grace_period=20,
+    grace_period=30,
     reduction_factor=1.2)
 reporter = CLIReporter(
     # parameter_columns=["l1", "l2", "lr", "batch_size"],
