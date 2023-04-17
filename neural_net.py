@@ -60,7 +60,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   data = dl.dataloader(kwargs["dataset"], device)
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
-  optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])
+  optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
