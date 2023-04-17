@@ -26,7 +26,7 @@ dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 fina
           'final/Dataset/RPMED-15-49-200.csv'
 checkpoint_dir = None
 num_samples = 10
-max_num_epochs = 250
+max_num_epochs = 100
 gpus_per_trial = 0
 
 # Defining the architecture
@@ -60,15 +60,15 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(5e-5,2e-4),
+	"lr": tune.loguniform(9e-5,4e-4),
     'batch_size': tune.qrandint(lower=20, upper=25, q=2)
 }
 scheduler = ASHAScheduler(
-    metric="loss",
-    mode="min",
+    metric="accuracy",
+    mode="max",
     max_t=max_num_epochs,
-    grace_period=40,
-    reduction_factor=1.3)
+    grace_period=50,
+    reduction_factor=1.15)
 reporter = CLIReporter(
     # parameter_columns=["l1", "l2", "lr", "batch_size"],
     metric_columns=["loss", "accuracy", "training_iteration"],
@@ -83,7 +83,7 @@ result = tune.run(
     scheduler=scheduler,
     progress_reporter=reporter, verbose=1)
 
-best_trial = result.get_best_trial("loss", "min", "last")
+best_trial = result.get_best_trial("accuracy", "max", "last")
 print("Best trial config: {}".format(best_trial.config))
 print("Best trial final validation loss: {}".format(
     best_trial.last_result["loss"]))
