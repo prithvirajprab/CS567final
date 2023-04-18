@@ -12,9 +12,6 @@ class CustomDataset(Dataset):
             reader = csv.reader(f)
             raw_data =list(reader)
 
-        # interested_features = list(set(range(38)) - set(range(3)))
-        # interested_features = [3,4,5,6]
-        # interested_features = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 25, 26, 27]
         interested_features = list(range(38))
 
         self.labels = torch.tensor(np.array([int(raw_data[_][-1]) - 1 for _ in range(len(raw_data))]), dtype=torch.long)
@@ -44,3 +41,4 @@ class CustomDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return data, label
+

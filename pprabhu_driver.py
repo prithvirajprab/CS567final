@@ -43,8 +43,11 @@ NetObject = Net(layersizes, acts)
 # Filenames
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
 print(timestamp, layersizes, acts, max_num_epochs)
-mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
+# mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
 acc_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl"
+mod_folder = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 " \
+    "final/Models/Model"+timestamp
+
 
 # Hyperparameters
 kwargs = {'epochs': max_num_epochs,
@@ -54,7 +57,7 @@ kwargs = {'epochs': max_num_epochs,
           'acts': acts,
           'precision': 4,
           'criterion': nn.CrossEntropyLoss(),
-          'mod_filename': mod_filename,
+          'mod_folder': mod_folder,
           'acc_filename': acc_filename,
           'checkpoint_dir': checkpoint_dir}
 

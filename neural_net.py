@@ -93,11 +93,14 @@ def train(config, checkpoint_dir = None, **kwargs):
     print("Epoch {}: Loss = {}".format(epoch+1, round(float(loss_epoch), kwargs['precision'])), flush=True, end=', ')
     print("Training Acc = {}, Validation Acc = {}".format(round(train_acc_epoch, kwargs['precision']),
                                                            round(valid_acc_epoch, kwargs['precision'])), flush=True, end=', ')
-    torch.save(NetObject, kwargs['mod_filename'])
+    # torch.save(NetObject, kwargs['mod_folder']+str(config["lr"])+".pt")
 
     # with tune.checkpoint_dir(epoch) as checkpoint_dir:
     #   path = os.path.join(checkpoint_dir, "checkpoint")
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
+
+    os.makedirs(kwargs['mod_folder'], exist_ok=True)
+    torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
 
     tune.report(loss=round(float(loss_epoch), kwargs['precision']), accuracy=round(valid_acc_epoch, kwargs['precision']))
 
