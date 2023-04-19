@@ -28,7 +28,6 @@ class Net(nn.Module):
   def forward(self, featurerow):
     num_layers = len(self.acts)
     layers = [self.features] + self.hidden + [self.damage]
-    # a_0 = self.acts[0](featurerow)#Why put into an activation function first?
 
     def arch(input, l):
       z_l = layers[l](input)

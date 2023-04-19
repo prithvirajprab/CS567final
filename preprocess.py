@@ -15,9 +15,10 @@ class CustomDataset(Dataset):
         return scaler.transform(column_data)
 
     def one_hot_encoder(self, column_data, mapping_index):
-        column_data = map(attribute_mapping[mapping_index].index, column_data)
-        column_data = np.array(list(column_data))
-        return torch.nn.functional.one_hot(torch.tensor(column_data, dtype=torch.long))
+        for i in range(len(column_data)):
+            column_data[i] = attribute_mapping[mapping_index].index(column_data[i])
+        column_data = column_data.astype(int)
+        return torch.nn.functional.one_hot(torch.tensor(column_data.flatten(), dtype=torch.long))
 
     def value_converter(self, temp_data):
         data = torch.empty((len(temp_data), 0), dtype=torch.float32)
