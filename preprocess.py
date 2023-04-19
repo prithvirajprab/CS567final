@@ -3,30 +3,66 @@ import csv
 import torch
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from attribute_mapping import attribute_mapping
+import os
+
 
 class CustomDataset(Dataset):
 
-    def __init__(self, file, transform=None, target_transform=None) -> None:
+    def standardizer(self, column_data):
         scaler = StandardScaler()
-        with open(file, 'r') as f:
+        scaler.fit(column_data)
+        return scaler.transform(column_data)
+
+    def one_hot_encoder(self, column_data, mapping_index):
+        column_data = map(attribute_mapping[mapping_index].index, column_data)
+        column_data = np.array(list(column_data))
+        return torch.nn.functional.one_hot(torch.tensor(column_data, dtype=torch.long))
+
+    def value_converter(self, temp_data):
+        data = torch.empty((len(temp_data), 0), dtype=torch.float32)
+        
+        for i in range(len(temp_data[0])):
+            column_data = temp_data[:, i:i+1]
+            if i in [7,8,9,10,11,12,13,25]:
+                column_data = self.one_hot_encoder(column_data, i)
+            elif i in [3,4,5,6,26]:
+                column_data = column_data.astype(int)
+                column_data = self.standardizer(column_data)
+                column_data = torch.tensor(column_data, dtype=torch.float32)
+            else:
+                column_data = torch.tensor(column_data.astype(int), dtype=torch.long)
+            try:
+                data = torch.cat((data, column_data), dim=1)
+            except Exception as e:
+                print(column_data)
+                raise e
+        return data
+    
+    def label_converter(self, label_data):
+        return torch.tensor(np.array([int(label_data[_][-1]) - 1 for _ in range(len(label_data))]), dtype=torch.long)
+
+    def __init__(self, value_file, label_file=None, transform=None, target_transform=None) -> None:
+
+        if label_file:
+            with open(label_file, 'r') as f:
+                reader = csv.reader(f)
+                label_data =list(reader)[1:]
+            self.labels = self.label_converter(label_data)
+        else:
+            self.labels = None
+
+        with open(value_file, 'r') as f:
             reader = csv.reader(f)
-            raw_data =list(reader)
+            value_data =list(reader)[1:]
 
         interested_features = list(range(38))
+        
+        value_data = np.array(value_data)[:, 1:]# remove the id
+        value_data = value_data[:, interested_features]
 
-        self.labels = torch.tensor(np.array([int(raw_data[_][-1]) - 1 for _ in range(len(raw_data))]), dtype=torch.long)
-        temp_data = torch.tensor(np.array([[int(raw_data[_][idx]) for idx in interested_features] for _ in range(len(raw_data))]),
-                                 dtype=torch.float32)
-        self.data = torch.empty((len(temp_data), 0), dtype=torch.float32)
-        for i in range(len(temp_data[0])):
-            if i in [0,1,2,7,8,9,10,11,12,13,25]:
-                self.data = torch.cat((self.data, torch.nn.functional.one_hot(temp_data[:, i].to(torch.long))), dim=1)
-            elif i in [3,4,5,6,26]:
-                scaler.fit(temp_data[:, i:i+1].numpy())
-                self.data = torch.cat((self.data, torch.tensor(scaler.transform(temp_data[:, i:i+1].numpy()), dtype=torch.float32)), dim=1)
-            else:
-                self.data = torch.cat((self.data, temp_data[:, i].unsqueeze(1)), dim=1)
-        # self.data = temp_data
+        self.data = self.value_converter(value_data)
+
         self.transform = transform
         self.target_transform = target_transform
 
@@ -42,3 +78,9 @@ class CustomDataset(Dataset):
             label = self.target_transform(label)
         return data, label
 
+    def save_processed_dataset(self, file_path):
+        data = self.data.numpy()
+        np.savetxt(file_path + '_value.csv', data, delimiter=',', fmt="%.2f")
+        if self.labels is not None:
+            labels = self.labels.numpy()
+            np.savetxt(file_path + '_label.csv', labels, delimiter=',', fmt="%d")

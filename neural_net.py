@@ -6,7 +6,6 @@ import pdb
 import pickle as pkl
 import os
 from ray import tune
-import dataloader as dl
 from preprocess import CustomDataset
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
@@ -49,7 +48,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   NetObject = Net(kwargs['layersizes'], kwargs['acts'])
   device="cpu"
 
-  dataset = CustomDataset(kwargs["dataset"])
+  dataset = CustomDataset(kwargs["value"], kwargs['label'])
   train_data, valid_data = random_split(
         dataset=dataset,
         lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
@@ -57,7 +56,6 @@ def train(config, checkpoint_dir = None, **kwargs):
   train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
   valid_dataloader = DataLoader(valid_data, batch_size=config['batch_size'], shuffle=True)
 
-  data = dl.dataloader(kwargs["dataset"], device)
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
