@@ -1,4 +1,3 @@
-import dataloader as dl
 from neural_net import Net, train
 import sys
 import datetime
@@ -11,6 +10,7 @@ from ray import tune
 
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
+import os
 
 # Activation functions
 elu = nn.ELU # Exponential linear function
@@ -19,11 +19,17 @@ tanh = nn.Tanh()
 relu = nn.ReLU()
 sigmoid = nn.Sigmoid()
 
+# convert the relative path to absolute path, so no need to modify the path every time!
+def to_abs_path(relative_path):
+    script_location = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(script_location, relative_path)
 
-# Setting up the device and dataset
-# device = "cpu"
-dataset = '/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 ' \
-          'final/Dataset/RPMED-15-49-200.csv'
+# Setting up the dataset
+value = to_abs_path('Dataset/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Values.csv')
+
+# set this to None or empty string when only do testing
+label = to_abs_path('Dataset/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Labels.csv')
+
 checkpoint_dir = None
 num_samples = 10
 max_num_epochs = 100
@@ -44,14 +50,15 @@ NetObject = Net(layersizes, acts)
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
 print(timestamp, layersizes, acts, max_num_epochs)
 # mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
-acc_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl"
-mod_folder = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 " \
-    "final/Models/Model"+timestamp
+acc_filename = to_abs_path("Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl")
+mod_folder = to_abs_path("Code/CS 567 " \
+    "final/Models/Model"+timestamp)
 
 
 # Hyperparameters
 kwargs = {'epochs': max_num_epochs,
-          'dataset': dataset,
+          'value': value,
+          'label': label,
           'momentum': 0.9,
           'layersizes': layersizes,
           'acts': acts,
