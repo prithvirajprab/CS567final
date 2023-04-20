@@ -24,9 +24,9 @@ def to_abs_path(relative_path):
     script_location = os.path.dirname(os.path.realpath(__file__))
     return os.path.join(script_location, relative_path)
 
-path = to_abs_path("Models/Model04_19_21_05_20_813/0.00015214361382123013.pt")
-oppath = to_abs_path("Outputs/v2.csv")
-layersizes = [364, 200, 125, 50, 15, 3]
+path = to_abs_path("Models/Model04_20_11_52_31_896/0.00016959577340701563.pt")
+oppath = to_abs_path("Outputs/v3test.csv")
+layersizes = [364, 200, 125, 60, 15, 3]
 acts = [nn.Linear, relu, relu, relu, relu, softmax]
 dataset_location = to_abs_path("Dataset/RPMED-31-66-200_Test_values.csv")
 original_test_location = to_abs_path("Dataset/Richters_Predictor_Modeling_Earthquake_Damage_-_Test_Values.csv")
@@ -46,12 +46,12 @@ def single_pass():
     net.load_state_dict(torch.load(path))
     net.eval()
 
-    net_state_dict = net.state_dict()
-    for layer_name, layer_weights in net_state_dict.items():
-        # pdb.set_trace()
-        print(f"{layer_name}: weights={layer_weights}")
+    # net_state_dict = net.state_dict()
+    # for layer_name, layer_weights in net_state_dict.items():
+    #     # pdb.set_trace()
+    #     print(f"{layer_name}: weights={layer_weights}")
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     with open(original_test_location, 'r') as f:
         reader = csv.reader(f)

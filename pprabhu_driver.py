@@ -36,8 +36,8 @@ max_num_epochs = 100
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [364,150,150,3]
-acts = [nn.Linear, relu, relu, softmax]
+layersizes = [364, 200, 125, 60, 15, 3]
+acts = [nn.Linear, relu, relu, relu, relu, softmax]
 NetObject = Net(layersizes, acts)
 
 # if torch.cuda.is_available():
@@ -69,8 +69,8 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(9e-5,4e-4),
-    'batch_size': tune.qrandint(lower=20, upper=25, q=2)
+	"lr": tune.loguniform(7e-5,3e-4),
+    'batch_size': tune.qrandint(lower=16, upper=25, q=2)
 }
 scheduler = ASHAScheduler(
     metric="accuracy",

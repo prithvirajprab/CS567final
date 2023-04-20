@@ -25,12 +25,14 @@ class Net(nn.Module):
     super(Net, self).__init__()
     self.acts = acts
     self.features = nn.Linear(in_features=layersizes[0], out_features=layersizes[1])
-    self.hidden = [nn.Linear(in_features=layersizes[j + 1], out_features=layersizes[j + 2]) for j in range(len(acts) - 3)]
+    self.hidden1 = nn.Linear(in_features=layersizes[1], out_features=layersizes[2])
+    self.hidden2 = nn.Linear(in_features=layersizes[2], out_features=layersizes[3])
+    self.hidden3 = nn.Linear(in_features=layersizes[3], out_features=layersizes[4])
     self.damage = nn.Linear(in_features=layersizes[-2], out_features=layersizes[-1])
 
   def forward(self, featurerow):
     num_layers = len(self.acts)
-    layers = [self.features] + self.hidden + [self.damage]
+    layers = [self.features] + [self.hidden1] + [self.hidden2] + [self.hidden3] + [self.damage]
 
     def arch(input, l):
       z_l = layers[l](input)
@@ -61,7 +63,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
-  schdeuler = StepLR(optimizer, step_size=50, gamma=0.1)
+  scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
@@ -104,9 +106,16 @@ def train(config, checkpoint_dir = None, **kwargs):
     os.makedirs(kwargs['mod_folder'], exist_ok=True)
     torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
 
+    # if train_acc_epoch - valid_acc_epoch > 0.025:
+    #   break
+    # net_state_dict = NetObject.state_dict()
+    # for layer_name, layer_weights in net_state_dict.items():
+    #   # pdb.set_trace()
+    #   print(f"{layer_name}: weights={layer_weights}")
+
     tune.report(loss=round(float(loss_epoch), kwargs['precision']), accuracy=round(valid_acc_epoch,
                                                                                    kwargs['precision']))
-    schdeuler.step()
+    scheduler.step()
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:
