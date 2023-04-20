@@ -83,16 +83,19 @@ class CustomDataset(Dataset):
         self.target_transform = target_transform
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)
 
     def __getitem__(self, idx):
         data = self.data[idx]
-        label = self.labels[idx]
-        if self.transform:
-            data = self.transform(data)
-        if self.target_transform:
-            label = self.target_transform(label)
-        return data, label
+        if self.labels is not None:
+            label = self.labels[idx]
+            if self.transform:
+                data = self.transform(data)
+            if self.target_transform:
+                label = self.target_transform(label)
+            return data, label
+        else:
+            return data
 
     def save_processed_dataset(self, file_path):
         data = self.data.numpy()

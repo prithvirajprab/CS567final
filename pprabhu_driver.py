@@ -50,9 +50,8 @@ NetObject = Net(layersizes, acts)
 timestamp = str(datetime.datetime.now())[5:23].replace(":", "_").replace(".", "_").replace(" ", "_").replace("-", "_")
 print(timestamp, layersizes, acts, max_num_epochs)
 # mod_filename = "/Users/prithvirajprabhu/Documents/Research projects local/CS 567 final project/Code/CS 567 final/Models/model_"+timestamp+".pt"
-acc_filename = to_abs_path("Code/CS 567 final/Accuracy/acc_"+timestamp+".pkl")
-mod_folder = to_abs_path("Code/CS 567 " \
-    "final/Models/Model"+timestamp)
+acc_filename = to_abs_path("Accuracy/acc_"+timestamp+".pkl")
+mod_folder = to_abs_path("Models/Model"+timestamp)
 
 
 # Hyperparameters

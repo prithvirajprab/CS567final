@@ -6,6 +6,8 @@ import pdb
 import pickle as pkl
 import os
 from ray import tune
+from torch.optim.lr_scheduler import StepLR
+
 from preprocess import CustomDataset
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
@@ -59,6 +61,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
+  schdeuler = StepLR(optimizer, step_size=50, gamma=0.1)
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
@@ -101,7 +104,9 @@ def train(config, checkpoint_dir = None, **kwargs):
     os.makedirs(kwargs['mod_folder'], exist_ok=True)
     torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
 
-    tune.report(loss=round(float(loss_epoch), kwargs['precision']), accuracy=round(valid_acc_epoch, kwargs['precision']))
+    tune.report(loss=round(float(loss_epoch), kwargs['precision']), accuracy=round(valid_acc_epoch,
+                                                                                   kwargs['precision']))
+    schdeuler.step()
 
   results = [loss_arr, train_acc, valid_acc]
   with open(kwargs['acc_filename'], "wb") as file:
