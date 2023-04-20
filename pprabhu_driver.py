@@ -69,14 +69,14 @@ kwargs = {'epochs': max_num_epochs,
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(7e-5,3e-4),
-    'batch_size': tune.qrandint(lower=16, upper=25, q=2)
+	"lr": tune.loguniform(8e-5,3.5e-4),
+    'batch_size': tune.qrandint(lower=20, upper=25, q=2)
 }
 scheduler = ASHAScheduler(
     metric="accuracy",
     mode="max",
     max_t=max_num_epochs,
-    grace_period=50,
+    grace_period=40,
     reduction_factor=1.15)
 reporter = CLIReporter(
     # parameter_columns=["l1", "l2", "lr", "batch_size"],

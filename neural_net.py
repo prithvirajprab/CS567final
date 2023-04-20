@@ -55,7 +55,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   dataset = CustomDataset(kwargs["value"], kwargs['label'], removeidslabelflag=True)
   train_data, valid_data = random_split(
         dataset=dataset,
-        lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
+        lengths=[int(len(dataset) * 0.5), len(dataset) - int(len(dataset) * 0.5)]
     )
   train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
   valid_dataloader = DataLoader(valid_data, batch_size=config['batch_size'], shuffle=True)
