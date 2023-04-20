@@ -25,7 +25,7 @@ def to_abs_path(relative_path):
     return os.path.join(script_location, relative_path)
 
 # Setting up the dataset
-value = to_abs_path('Dataset/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Values.csv')
+value = to_abs_path('Dataset/RPMED-31-66-200_Train_values.csv')
 
 # set this to None or empty string when only do testing
 label = to_abs_path('Dataset/Richters_Predictor_Modeling_Earthquake_Damage_-_Train_Labels.csv')
@@ -36,8 +36,8 @@ max_num_epochs = 100
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [339,200,125,50,15,3]
-acts = [nn.Linear, relu, relu, relu, relu, softmax]
+layersizes = [364,150,150,3]
+acts = [nn.Linear, relu, relu, softmax]
 NetObject = Net(layersizes, acts)
 
 # if torch.cuda.is_available():

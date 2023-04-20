@@ -9,6 +9,7 @@ from ray import tune
 from preprocess import CustomDataset
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
+import pdb
 
 from sklearn.metrics import f1_score
 
@@ -47,7 +48,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   NetObject = Net(kwargs['layersizes'], kwargs['acts'])
   device="cpu"
 
-  dataset = CustomDataset(kwargs["value"], kwargs['label'])
+  dataset = CustomDataset(kwargs["value"], kwargs['label'], removeidslabelflag=True)
   train_data, valid_data = random_split(
         dataset=dataset,
         lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
@@ -67,6 +68,7 @@ def train(config, checkpoint_dir = None, **kwargs):
   for epoch in range(kwargs['epochs']):
     loss_epoch = 0
     batch_count = 0
+    # pdb.set_trace()
     for batch_idx, (X, y) in enumerate(train_dataloader):
       X = X.to(device)
       y = y.to(device)

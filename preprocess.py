@@ -14,9 +14,10 @@ class CustomDataset(Dataset):
         scaler.fit(column_data)
         return scaler.transform(column_data)
 
-    def one_hot_encoder(self, column_data, mapping_index):
-        for i in range(len(column_data)):
-            column_data[i] = attribute_mapping[mapping_index].index(column_data[i])
+    def one_hot_encoder(self, column_data, mapping_index, attributemap=True):
+        if attributemap:
+            for i in range(len(column_data)):
+                column_data[i] = attribute_mapping[mapping_index].index(column_data[i])
         column_data = column_data.astype(int)
         return torch.nn.functional.one_hot(torch.tensor(column_data.flatten(), dtype=torch.long))
 
@@ -26,7 +27,9 @@ class CustomDataset(Dataset):
         for i in range(len(temp_data[0])):
             column_data = temp_data[:, i:i+1]
             if i in [7,8,9,10,11,12,13,25]:
-                column_data = self.one_hot_encoder(column_data, i)
+                column_data = self.one_hot_encoder(column_data, i, attributemap=True)
+            elif i in [0,1,2]:
+                column_data = self.one_hot_encoder(column_data, i, attributemap=False)
             elif i in [3,4,5,6,26]:
                 column_data = column_data.astype(int)
                 column_data = self.standardizer(column_data)
@@ -43,26 +46,38 @@ class CustomDataset(Dataset):
     def label_converter(self, label_data):
         return torch.tensor(np.array([int(label_data[_][-1]) - 1 for _ in range(len(label_data))]), dtype=torch.long)
 
-    def __init__(self, value_file, label_file=None, transform=None, target_transform=None) -> None:
+    def __init__(self, value_file, label_file=None, transform=None, target_transform=None, encodeFlag=False,
+                 removeidslabelflag=False, removeidsvalueflag=False, removebuildingidflag=False) -> None:
 
         if label_file:
             with open(label_file, 'r') as f:
                 reader = csv.reader(f)
-                label_data =list(reader)[1:]
+                if removeidslabelflag:
+                    label_data =list(reader)[1:]
+                else:
+                    label_data = list(reader)
             self.labels = self.label_converter(label_data)
         else:
             self.labels = None
 
         with open(value_file, 'r') as f:
             reader = csv.reader(f)
-            value_data =list(reader)[1:]
+            if removeidsvalueflag:
+                value_data =list(reader)[1:]
+            else:
+                value_data =list(reader)
 
-        interested_features = list(range(38))
-        
-        value_data = np.array(value_data)[:, 1:]# remove the id
-        value_data = value_data[:, interested_features]
+        if removebuildingidflag:
+            value_data = np.array(value_data)[:, 1:]  # remove the id
+        else:
+            value_data = np.array(value_data, dtype=np.float32)
 
-        self.data = self.value_converter(value_data)
+        if encodeFlag:
+            interested_features = list(range(38))
+            self.data = value_data[:, interested_features]
+            self.data = self.value_converter(self.data)
+        else:
+            self.data = value_data
 
         self.transform = transform
         self.target_transform = target_transform
