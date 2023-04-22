@@ -36,8 +36,8 @@ max_num_epochs = 100
 gpus_per_trial = 0
 
 # Defining the architecture
-layersizes = [364, 200, 125, 60, 15, 3]
-acts = [nn.Linear, relu, relu, relu, relu, softmax]
+layersizes = [364, 400, 3]
+acts = [nn.Linear, relu, softmax]
 NetObject = Net(layersizes, acts)
 
 # if torch.cuda.is_available():
@@ -65,12 +65,13 @@ kwargs = {'epochs': max_num_epochs,
           'criterion': nn.CrossEntropyLoss(),
           'mod_folder': mod_folder,
           'acc_filename': acc_filename,
-          'checkpoint_dir': checkpoint_dir}
+          'checkpoint_dir': checkpoint_dir, 
+          'batch_size': 128}
 
 # Ray tune wrappers
 config = {
-	"lr": tune.loguniform(8e-5,3.5e-4),
-    'batch_size': tune.qrandint(lower=20, upper=25, q=2)
+	"lr": tune.loguniform(1e-4,2e-4),
+    # 'batch_size': tune.qrandint(lower=128, upper=25, q=2)
 }
 scheduler = ASHAScheduler(
     metric="accuracy",
@@ -86,7 +87,7 @@ reporter = CLIReporter(
 # Main training function
 result = tune.run(
     partial(train, **kwargs),
-    resources_per_trial={"cpu": 2, "gpu": gpus_per_trial},
+    resources_per_trial={"cpu": 4, "gpu": gpus_per_trial},
     config=config,
     num_samples=num_samples,
     scheduler=scheduler,

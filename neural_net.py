@@ -26,13 +26,16 @@ class Net(nn.Module):
     self.acts = acts
     self.features = nn.Linear(in_features=layersizes[0], out_features=layersizes[1])
     self.hidden1 = nn.Linear(in_features=layersizes[1], out_features=layersizes[2])
-    self.hidden2 = nn.Linear(in_features=layersizes[2], out_features=layersizes[3])
-    self.hidden3 = nn.Linear(in_features=layersizes[3], out_features=layersizes[4])
+    # self.hidden2 = nn.Linear(in_features=layersizes[2], out_features=layersizes[3])
+    # self.hidden3 = nn.Linear(in_features=layersizes[3], out_features=layersizes[4])
+    # self.hidden4 = nn.Linear(in_features=layersizes[4], out_features=layersizes[5])
+    # self.hidden5 = nn.Linear(in_features=layersizes[5], out_features=layersizes[6])
     self.damage = nn.Linear(in_features=layersizes[-2], out_features=layersizes[-1])
 
   def forward(self, featurerow):
     num_layers = len(self.acts)
-    layers = [self.features] + [self.hidden1] + [self.hidden2] + [self.hidden3] + [self.damage]
+    # layers = [self.features] + [self.hidden1] + [self.hidden2] + [self.hidden3] + [self.hidden4] + [self.hidden5] + [self.damage]
+    layers = [self.features] + [self.hidden1] + [self.damage]
 
     def arch(input, l):
       z_l = layers[l](input)
@@ -55,20 +58,27 @@ def train(config, checkpoint_dir = None, **kwargs):
   dataset = CustomDataset(kwargs["value"], kwargs['label'], removeidslabelflag=True)
   train_data, valid_data = random_split(
         dataset=dataset,
-        lengths=[int(len(dataset) * 0.5), len(dataset) - int(len(dataset) * 0.5)]
+        lengths=[int(len(dataset) * 0.9), len(dataset) - int(len(dataset) * 0.9)]
     )
-  train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
-  valid_dataloader = DataLoader(valid_data, batch_size=config['batch_size'], shuffle=True)
+  train_dataloader = DataLoader(train_data, batch_size=kwargs['batch_size'], shuffle=True)
+  valid_dataloader = DataLoader(valid_data, batch_size=kwargs['batch_size'], shuffle=True)
 
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
-  scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
+  scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
   #   net.load_state_dict(model_state)
   #   optimizer.load_state_dict(optimizer_state)
+
+  min_loss = float('inf')
+  min_loss_epoch = 0
+  max_train_acc = 0
+  max_train_acc_epoch = 0
+  max_valid_acc = 0
+  max_valid_acc_epoch = 0
 
   for epoch in range(kwargs['epochs']):
     loss_epoch = 0
@@ -95,8 +105,20 @@ def train(config, checkpoint_dir = None, **kwargs):
     loss_epoch /= batch_count
     loss_arr.append(loss_epoch)
     print("Epoch {}: Loss = {}".format(epoch+1, round(float(loss_epoch), kwargs['precision'])), flush=True, end=', ')
-    print("Training Acc = {}, Validation Acc = {}".format(round(train_acc_epoch, kwargs['precision']),
-                                                           round(valid_acc_epoch, kwargs['precision'])), flush=True, end=', ')
+    print("Training Acc = {}, Validation Acc = {}\n".format(round(train_acc_epoch, kwargs['precision']),
+                                                           round(valid_acc_epoch, kwargs['precision'])), flush=True)
+    if loss_epoch < min_loss:
+      min_loss = loss_epoch
+      min_loss_epoch = epoch
+    if train_acc_epoch > max_train_acc:
+      max_train_acc = train_acc_epoch
+      max_train_acc_epoch = epoch
+    if valid_acc_epoch > max_valid_acc:
+      max_valid_acc = valid_acc_epoch
+      max_valid_acc_epoch = epoch
+    print(f"ml: {min_loss:.4f}, e: {min_loss_epoch + 1}")
+    print(f"ta: {max_train_acc:.4f}, e: {max_train_acc_epoch + 1}")
+    print(f"va: {max_valid_acc:.4f}, e: {max_valid_acc_epoch + 1}")
     # torch.save(NetObject, kwargs['mod_folder']+str(config["lr"])+".pt")
 
     # with tune.checkpoint_dir(epoch) as checkpoint_dir:
@@ -104,7 +126,8 @@ def train(config, checkpoint_dir = None, **kwargs):
     #   torch.save((net.state_dict(), optimizer.state_dict()), path)
 
     os.makedirs(kwargs['mod_folder'], exist_ok=True)
-    torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
+    if max_valid_acc_epoch == epoch:
+      torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
 
     # if train_acc_epoch - valid_acc_epoch > 0.025:
     #   break
