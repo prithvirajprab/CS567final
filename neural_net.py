@@ -10,10 +10,12 @@ from torch.optim.lr_scheduler import StepLR
 
 from preprocess import CustomDataset
 from torch.utils.data import random_split
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 import pdb
+import joblib
 
 from sklearn.metrics import f1_score
+from sklearn.decomposition import PCA
 
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
@@ -26,13 +28,14 @@ class Net(nn.Module):
     self.acts = acts
     self.features = nn.Linear(in_features=layersizes[0], out_features=layersizes[1])
     self.hidden1 = nn.Linear(in_features=layersizes[1], out_features=layersizes[2])
-    self.hidden2 = nn.Linear(in_features=layersizes[2], out_features=layersizes[3])
-    self.hidden3 = nn.Linear(in_features=layersizes[3], out_features=layersizes[4])
+    # self.hidden2 = nn.Linear(in_features=layersizes[2], out_features=layersizes[3])
+    # self.hidden3 = nn.Linear(in_features=layersizes[3], out_features=layersizes[4])
     self.damage = nn.Linear(in_features=layersizes[-2], out_features=layersizes[-1])
 
   def forward(self, featurerow):
     num_layers = len(self.acts)
-    layers = [self.features] + [self.hidden1] + [self.hidden2] + [self.hidden3] + [self.damage]
+    # layers = [self.features] + [self.hidden1] + [self.hidden2] + [self.hidden3] + [self.damage]
+    layers = [self.features] + [self.hidden1] + [self.damage]
 
     def arch(input, l):
       z_l = layers[l](input)
@@ -52,18 +55,41 @@ def train(config, checkpoint_dir = None, **kwargs):
   NetObject = Net(kwargs['layersizes'], kwargs['acts'])
   device="cpu"
 
-  dataset = CustomDataset(kwargs["value"], kwargs['label'], removeidslabelflag=True)
-  train_data, valid_data = random_split(
-        dataset=dataset,
-        lengths=[int(len(dataset) * 0.5), len(dataset) - int(len(dataset) * 0.5)]
-    )
-  train_dataloader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=True)
-  valid_dataloader = DataLoader(valid_data, batch_size=config['batch_size'], shuffle=True)
+  dataset = CustomDataset(kwargs["value"], kwargs['label'], removeidslabelflag=True, encodeFlag=True, 
+                          removeidsvalueflag=True, removebuildingidflag=True)
+  # train_data, valid_data = random_split(
+  #       dataset=dataset,
+  #       lengths=[int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)]
+  #   )
+  
+  train_data_indices = np.random.choice(list(range(len(dataset.data))), size=int(len(dataset.data) * 0.8), replace=False)
+  train_data = dataset.data[train_data_indices]
+  valid_data_indices = list(set(range(len(dataset.data))) - set(train_data_indices))
+  valid_data = dataset.data[valid_data_indices]
+
+  def PCA_converter(data, pca=None):
+    data = data.numpy()
+    if not pca:
+      pca = PCA(n_components=2)
+      pca.fit(data)
+    pca_data = pca.transform(data)
+    return torch.tensor(pca_data, dtype=torch.float32), pca
+  
+  tmp, pca = PCA_converter(train_data[:, :14027])
+  train_data = torch.cat((tmp, train_data[:, 14027:]), dim=1)
+
+  tmp, pca = PCA_converter(valid_data[:, :14027], pca=pca)
+  valid_data = torch.cat((tmp, valid_data[:, 14027:]), dim=1)
+
+  joblib.dump(pca, 'pca_model.joblib')
+
+  train_dataloader = DataLoader(TensorDataset(train_data), batch_size=kwargs['batch_size'], shuffle=True)
+  valid_dataloader = DataLoader(TensorDataset(valid_data), batch_size=kwargs['batch_size'], shuffle=True)
 
   # optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'], betas=(0.9, 0.99), eps=1e-08,
   #                        weight_decay=10 ** -4, amsgrad=False)
   optimizer = optim.Adam(NetObject.parameters(), lr=config['lr'])  # use_ema, ema_momentum
-  scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
+  scheduler = StepLR(optimizer, step_size=30, gamma=0.8)
 
   # if checkpoint_dir:
   #   model_state, optimizer_state = torch.load(os.path.join(checkpoint_dir, "checkpoint"))
@@ -106,8 +132,8 @@ def train(config, checkpoint_dir = None, **kwargs):
     os.makedirs(kwargs['mod_folder'], exist_ok=True)
     torch.save(NetObject.state_dict(), os.path.join(kwargs['mod_folder'], str(config["lr"])+".pt"))
 
-    # if train_acc_epoch - valid_acc_epoch > 0.025:
-    #   break
+    if train_acc_epoch - valid_acc_epoch > 0.025:
+      break
     # net_state_dict = NetObject.state_dict()
     # for layer_name, layer_weights in net_state_dict.items():
     #   # pdb.set_trace()

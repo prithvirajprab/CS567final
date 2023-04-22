@@ -4,7 +4,6 @@ import torch
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from attribute_mapping import attribute_mapping
-import os
 
 
 class CustomDataset(Dataset):
@@ -41,13 +40,14 @@ class CustomDataset(Dataset):
             except Exception as e:
                 print(column_data)
                 raise e
+
         return data
     
     def label_converter(self, label_data):
         return torch.tensor(np.array([int(label_data[_][-1]) - 1 for _ in range(len(label_data))]), dtype=torch.long)
 
     def __init__(self, value_file, label_file=None, transform=None, target_transform=None, encodeFlag=False,
-                 removeidslabelflag=False, removeidsvalueflag=False, removebuildingidflag=False) -> None:
+                 removeidslabelflag=False, removeidsvalueflag=False, removebuildingidflag=False,) -> None:
 
         if label_file:
             with open(label_file, 'r') as f:
