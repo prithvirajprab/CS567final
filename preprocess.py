@@ -73,7 +73,7 @@ class CustomDataset(Dataset):
             value_data = np.array(value_data, dtype=np.float32)
 
         if encodeFlag:
-            interested_features = list(range(38))
+            interested_features = list(range(3))
             self.data = value_data[:, interested_features]
             self.data = self.value_converter(self.data)
         else:
